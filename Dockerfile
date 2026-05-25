@@ -29,8 +29,16 @@ COPY . .
 # Instalar dependencias de producción de Composer
 RUN composer install --no-dev --optimize-autoloader
 
-# Configurar permisos correctos para el servidor web
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Crear las carpetas internas obligatorias por si no existen en Git y darles permisos full
+RUN mkdir -p /var/www/html/storage/framework/cache/data \
+    && mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/logs \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Indicarle a Render qué puerto escuchar de forma obligatoria
+EXPOSE 80
 
 # Comando para optimizar y arrancar Apache
 CMD php artisan optimize && apache2-foreground
