@@ -30,10 +30,10 @@ RUN mkdir -p /app/storage/framework/cache/data \
 # Exponer el puerto nativo de Render
 EXPOSE 10000
 
-# Comando definitivo: Limpia caché, corre migraciones y enciende el servicio
+# Comando definitivo: Limpia caché, corre migraciones con Seeders y enciende el servicio
 CMD php artisan config:clear && \
     php artisan config:cache && \
     php artisan route:cache && \
     php artisan view:cache && \
-    php artisan migrate --force && \
+    php artisan migrate --seed --force && \
     php artisan serve --host=0.0.0.0 --port=10000
