@@ -1,44 +1,39 @@
-FROM php:8.3-apache
+FROM php:8.3-cli
 
-# Instalar extensiones necesarias de PHP para Laravel y MySQL
+# Instalar dependencias del sistema y la extensión pdo_mysql para Aiven
 RUN apt-get update && apt-get install -y \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
-    unzip \
     git \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql
+    unzip \
+    libzip-dev \
+    zip \
+    && docker-php-ext-install pdo pdo_mysql zip
 
-# Habilitar el módulo de reescritura de Apache para las rutas de Laravel
-RUN a2enmod rewrite
-
-# Cambiar la raíz de Apache para que apunte a la carpeta /public de Laravel
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
-
-# Instalar Composer
+# Copiar Composer desde su imagen oficial
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copiar los archivos del proyecto al contenedor
-WORKDIR /var/www/html
+# Configurar el directorio de trabajo
+WORKDIR /app
+
+# Copiar los archivos del proyecto
 COPY . .
 
-# Instalar dependencias de producción de Composer
-RUN composer install --no-dev --optimize-autoloader
+# Instalar dependencias de Composer para producción
+RUN composer install --optimize-autoloader --no-dev
 
-# Crear las carpetas internas obligatorias por si no existen en Git y darles permisos full
-RUN mkdir -p /var/www/html/storage/framework/cache/data \
-    && mkdir -p /var/www/html/storage/framework/sessions \
-    && mkdir -p /var/www/html/storage/framework/views \
-    && mkdir -p /var/www/html/storage/logs \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Crear carpetas de almacenamiento obligatorias y otorgar permisos completos
+RUN mkdir -p /app/storage/framework/cache/data \
+    && mkdir -p /app/storage/framework/sessions \
+    && mkdir -p /app/storage/framework/views \
+    && mkdir -p /app/storage/logs \
+    && chmod -R 777 /app/storage /app/bootstrap/cache
 
-# Indicarle a Render qué puerto escuchar de forma obligatoria
-EXPOSE 80
+# Exponer el puerto nativo de Render
+EXPOSE 10000
 
-# Comando corregido para limpiar caché vieja en producción y arrancar Apache
-CMD php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan config:cache && php artisan route:cache && apache2-foreground
+# Comando definitivo: Limpia caché, corre migraciones y enciende el servicio
+CMD php artisan config:clear && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache && \
+    php artisan migrate --force && \
+    php artisan serve --host=0.0.0.0 --port=10000
