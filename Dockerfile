@@ -40,5 +40,5 @@ RUN mkdir -p /var/www/html/storage/framework/cache/data \
 # Indicarle a Render qué puerto escuchar de forma obligatoria
 EXPOSE 80
 
-# Comando para optimizar y arrancar Apache
-CMD php artisan optimize && apache2-foreground
+# Comando corregido para limpiar caché vieja en producción y arrancar Apache
+CMD php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan config:cache && php artisan route:cache && apache2-foreground
