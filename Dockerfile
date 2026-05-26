@@ -30,8 +30,9 @@ RUN mkdir -p /app/storage/framework/cache/data \
 # Exponer el puerto nativo de Render
 EXPOSE 10000
 
+# Comando definitivo y corregido
 CMD php artisan config:clear && \
-    php artisan config:cache && \
+    php artisan cache:clear && \
     php artisan route:cache && \
     php artisan view:cache && \
     php artisan migrate --force && \
